@@ -1,0 +1,41 @@
+### 1. Listar productos
+GET http://localhost:3001/api/productos
+
+### 2. Crear producto (Éxito)
+POST http://localhost:3001/api/productos
+Content-Type: application/json
+
+{
+    "nombre": "Teclado Mecánico",
+    "precio": 45000.50,
+    "stock": 15,
+    "categoria": "Periféricos"
+}
+
+### 3. Crear producto con datos inválidos (Error de validación)
+POST http://localhost:3001/api/productos
+Content-Type: application/json
+
+{
+    "nombre": "",
+    "precio": -10,
+    "stock": -5,
+    "categoria": ""
+}
+
+### 4. Obtener producto por ID
+GET http://localhost:3001/api/productos/1
+
+### 5. Modificar producto
+PUT http://localhost:3001/api/productos/1
+Content-Type: application/json
+
+{
+    "nombre": "Teclado RGB Pro",
+    "precio": 52000.00,
+    "stock": 10,
+    "categoria": "Periféricos"
+}
+
+### 6. Eliminar producto
+DELETE http://localhost:3001/api/productos/1
