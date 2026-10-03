@@ -1,0 +1,45 @@
+### 1. Listar rectángulos
+GET http://localhost:3000/api/rectangulos
+
+### 2. Crear rectángulo
+POST http://localhost:3000/api/rectangulos
+Content-Type: application/json
+
+{
+    "lado_a": 5.0,
+    "lado_b": 10.0
+}
+
+### 3. Intentar enviar campos calculados 
+POST http://localhost:3000/api/rectangulos
+Content-Type: application/json
+
+{
+    "lado_a": 5.0,
+    "lado_b": 10.0,
+    "perimetro": 30.0
+}
+
+### 4. Intentar enviar valores inválidos 
+POST http://localhost:3000/api/rectangulos
+Content-Type: application/json
+
+{
+    "lado_a": -2,
+    "lado_b": 0
+}
+
+### 5. Obtener por ID
+GET http://localhost:3000/api/rectangulos/1
+
+### 6. Modificar rectángulo
+PUT http://localhost:3000/api/rectangulos/1
+Content-Type: application/json
+
+{
+    "lado_a": 4.0,
+    "lado_b": 8.0
+}
+
+### 7. Eliminar rectángulo
+DELETE http://localhost:3000/api/rectangulos/1
