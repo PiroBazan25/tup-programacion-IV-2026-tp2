@@ -1,0 +1,40 @@
+### 1. Listar contactos
+GET http://localhost:3002/api/contactos
+
+### 2. Crear contacto (Éxito)
+POST http://localhost:3002/api/contactos
+Content-Type: application/json
+
+{
+    "nombre": "Ángel Bazán",
+    "email": "angel.bazan@example.com",
+    "telefono": "+543804123456",
+    "empresa": "Tech Solutions"
+}
+
+### 3. Crear contacto con datos inválidos (Error de validación)
+POST http://localhost:3002/api/contactos
+Content-Type: application/json
+
+{
+    "nombre": "",
+    "email": "email-invalido",
+    "telefono": ""
+}
+
+### 4. Obtener contacto por ID
+GET http://localhost:3002/api/contactos/1
+
+### 5. Modificar contacto
+PUT http://localhost:3002/api/contactos/1
+Content-Type: application/json
+
+{
+    "nombre": "Ángel Bazán Modificado",
+    "email": "angel.bazan@example.com",
+    "telefono": "+543804123456",
+    "empresa": "Sistemas SRL"
+}
+
+### 6. Eliminar contacto
+DELETE http://localhost:3002/api/contactos/1
