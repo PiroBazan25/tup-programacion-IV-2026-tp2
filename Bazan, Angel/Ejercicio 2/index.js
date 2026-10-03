@@ -1,137 +1,131 @@
+require('dotenv').config();
 const express = require('express');
 const mysql = require('mysql2/promise');
-const { body, param, validationResult } = require('express-validator');
+const { body, param, query, validationResult } = require('express-validator');
 
 const app = express();
 app.use(express.json());
 
-// Pool de conexión a MySQL
-const pool = mysql.createPool({
-    host: 'localhost',
-    user: 'root',
-    password: '123456', 
+const db = mysql.createPool({
+    host: process.env.DB_HOST || 'localhost',
+    user: process.env.DB_USER || 'root',
+    password: process.env.DB_PASSWORD || '123456',
     database: 'tp2_ejercicio2',
     waitForConnections: true,
     connectionLimit: 10
 });
 
-// Middleware para manejo de errores de validación
-const handleValidationErrors = (req, res, next) => {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-        return res.status(400).json({
-            status: 'error',
-            message: 'Errores de validación en la solicitud',
-            errors: errors.array()
-        });
+const validarCampos = (req, res, next) => {
+    const errores = validationResult(req);
+    if (!errores.isEmpty()) {
+        return res.status(400).json({ status: 'error', errores: errores.array() });
     }
     next();
 };
 
-// Validaciones para datos de producto
-const validateProducto = [
-    body('nombre')
-        .exists().withMessage('El campo nombre es obligatorio')
-        .trim().notEmpty().withMessage('El nombre no puede estar vacío')
-        .isLength({ max: 100 }).withMessage('El nombre no puede exceder los 100 caracteres'),
-    body('precio')
-        .exists().withMessage('El campo precio es obligatorio')
-        .isFloat({ gt: 0 }).withMessage('El precio debe ser un número mayor a 0'),
-    body('stock')
-        .exists().withMessage('El campo stock es obligatorio')
-        .isInt({ min: 0 }).withMessage('El stock debe ser un número entero mayor o igual a 0'),
-    body('categoria')
-        .exists().withMessage('El campo categoría es obligatorio')
-        .trim().notEmpty().withMessage('La categoría no puede estar vacía'),
-    handleValidationErrors
-];
-
-// Validación para el ID
-const validateId = [
-    param('id').isInt({ gt: 0 }).withMessage('El ID debe ser un número entero positivo'),
-    handleValidationErrors
-];
-
-
-// GET /api/productos - Listar todos
-app.get('/api/productos', async (req, res) => {
+// GET /api/tareas (con filtro por estado opcional)
+app.get('/api/tareas', [
+    query('estado').optional().isIn(['pendiente', 'completada']).withMessage('El estado debe ser pendiente o completada'),
+    validarCampos
+], async (req, res) => {
     try {
-        const [rows] = await pool.query('SELECT * FROM productos');
+        const { estado } = req.query;
+        let sql = 'SELECT * FROM tareas';
+        const params = [];
+
+        if (estado) {
+            sql += ' WHERE estado = ?';
+            params.push(estado);
+        }
+
+        const [rows] = await db.execute(sql, params);
         res.json({ status: 'success', data: rows });
     } catch (error) {
         res.status(500).json({ status: 'error', message: error.message });
     }
 });
 
-// GET /api/productos/:id - Obtener por ID
-app.get('/api/productos/:id', validateId, async (req, res) => {
+// GET /api/tareas/:id
+app.get('/api/tareas/:id', [
+    param('id').isInt({ min: 1 }).withMessage('ID inválido'),
+    validarCampos
+], async (req, res) => {
     try {
-        const { id } = req.params;
-        const [rows] = await pool.query('SELECT * FROM productos WHERE id = ?', [id]);
-        if (rows.length === 0) {
-            return res.status(404).json({ status: 'error', message: 'Producto no encontrado' });
-        }
+        const [rows] = await db.execute('SELECT * FROM tareas WHERE id = ?', [req.params.id]);
+        if (rows.length === 0) return res.status(404).json({ status: 'error', message: 'Tarea no encontrada' });
         res.json({ status: 'success', data: rows[0] });
     } catch (error) {
         res.status(500).json({ status: 'error', message: error.message });
     }
 });
 
-// POST /api/productos - Crear producto
-app.post('/api/productos', validateProducto, async (req, res) => {
+// POST /api/tareas
+app.post('/api/tareas', [
+    body('nombre').trim().notEmpty().withMessage('El nombre es obligatorio')
+        .isLength({ max: 150 }).withMessage('El nombre no debe superar 150 caracteres'),
+    body('estado').optional().isIn(['pendiente', 'completada']).withMessage('Estado inválido'),
+    validarCampos
+], async (req, res) => {
     try {
-        const { nombre, precio, stock, categoria } = req.body;
-        const [result] = await pool.query(
-            'INSERT INTO productos (nombre, precio, stock, categoria) VALUES (?, ?, ?, ?)',
-            [nombre, precio, stock, categoria]
-        );
+        const { nombre, estado = 'pendiente' } = req.body;
+        
+        // Unicidad case-insensitive
+        const [existentes] = await db.execute('SELECT id FROM tareas WHERE LOWER(nombre) = LOWER(?)', [nombre]);
+        if (existentes.length > 0) {
+            return res.status(400).json({ status: 'error', message: 'Ya existe una tarea con ese nombre' });
+        }
+
+        const [result] = await db.execute('INSERT INTO tareas (nombre, estado) VALUES (?, ?)', [nombre, estado]);
         res.status(201).json({
             status: 'success',
-            message: 'Producto creado exitosamente',
-            data: { id: result.insertId, nombre, precio, stock, categoria }
+            message: 'Tarea creada exitosamente',
+            data: { id: result.insertId, nombre, estado }
         });
     } catch (error) {
         res.status(500).json({ status: 'error', message: error.message });
     }
 });
 
-// PUT /api/productos/:id 
-app.put('/api/productos/:id', [...validateId, ...validateProducto], async (req, res) => {
+// PUT /api/tareas/:id
+app.put('/api/tareas/:id', [
+    param('id').isInt({ min: 1 }).withMessage('ID inválido'),
+    body('nombre').trim().notEmpty().withMessage('El nombre es obligatorio')
+        .isLength({ max: 150 }).withMessage('El nombre no debe superar 150 caracteres'),
+    body('estado').isIn(['pendiente', 'completada']).withMessage('El estado es obligatorio y debe ser pendiente o completada'),
+    validarCampos
+], async (req, res) => {
     try {
         const { id } = req.params;
-        const { nombre, precio, stock, categoria } = req.body;
-        const [result] = await pool.query(
-            'UPDATE productos SET nombre = ?, precio = ?, stock = ?, categoria = ? WHERE id = ?',
-            [nombre, precio, stock, categoria, id]
-        );
-        if (result.affectedRows === 0) {
-            return res.status(404).json({ status: 'error', message: 'Producto no encontrado para actualizar' });
+        const { nombre, estado } = req.body;
+
+        const [tarea] = await db.execute('SELECT * FROM tareas WHERE id = ?', [id]);
+        if (tarea.length === 0) return res.status(404).json({ status: 'error', message: 'Tarea no encontrada' });
+
+        const [duplicados] = await db.execute('SELECT id FROM tareas WHERE LOWER(nombre) = LOWER(?) AND id != ?', [nombre, id]);
+        if (duplicados.length > 0) {
+            return res.status(400).json({ status: 'error', message: 'Ya existe otra tarea con ese nombre' });
         }
-        res.json({
-            status: 'success',
-            message: 'Producto actualizado exitosamente',
-            data: { id: parseInt(id), nombre, precio, stock, categoria }
-        });
+
+        await db.execute('UPDATE tareas SET nombre = ?, estado = ? WHERE id = ?', [nombre, estado, id]);
+        res.json({ status: 'success', message: 'Tarea actualizada', data: { id: Number(id), nombre, estado } });
     } catch (error) {
         res.status(500).json({ status: 'error', message: error.message });
     }
 });
 
-// DELETE /api/productos/:id 
-app.delete('/api/productos/:id', validateId, async (req, res) => {
+// DELETE /api/tareas/:id
+app.delete('/api/tareas/:id', [
+    param('id').isInt({ min: 1 }).withMessage('ID inválido'),
+    validarCampos
+], async (req, res) => {
     try {
-        const { id } = req.params;
-        const [result] = await pool.query('DELETE FROM productos WHERE id = ?', [id]);
-        if (result.affectedRows === 0) {
-            return res.status(404).json({ status: 'error', message: 'Producto no encontrado' });
-        }
-        res.json({ status: 'success', message: 'Producto eliminado exitosamente' });
+        const [result] = await db.execute('DELETE FROM tareas WHERE id = ?', [req.params.id]);
+        if (result.affectedRows === 0) return res.status(404).json({ status: 'error', message: 'Tarea no encontrada' });
+        res.json({ status: 'success', message: 'Tarea eliminada exitosamente' });
     } catch (error) {
         res.status(500).json({ status: 'error', message: error.message });
     }
 });
 
-const PORT = 3001;
-app.listen(PORT, () => {
-    console.log(`Servidor de Ejercicio 2 corriendo en http://localhost:${PORT}`);
-});
+const PORT = process.env.PORT || 3002;
+app.listen(PORT, () => console.log(`Ejercicio 2 corriendo en puerto ${PORT}`));

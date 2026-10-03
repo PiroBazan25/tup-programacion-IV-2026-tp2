@@ -1,41 +1,34 @@
-### 1. Listar productos
-GET http://localhost:3001/api/productos
+### 1. Listar todas las tareas
+GET http://localhost:3002/api/tareas
 
-### 2. Crear producto (Éxito)
-POST http://localhost:3001/api/productos
+### 2. Filtrar tareas pendientes
+GET http://localhost:3002/api/tareas?estado=pendiente
+
+### 3. Crear Tarea 1
+POST http://localhost:3002/api/tareas
 Content-Type: application/json
 
 {
-    "nombre": "Teclado Mecánico",
-    "precio": 45000.50,
-    "stock": 15,
-    "categoria": "Periféricos"
+  "nombre": "Estudiar para Programacion IV",
+  "estado": "pendiente"
 }
 
-### 3. Crear producto con datos inválidos (Error de validación)
-POST http://localhost:3001/api/productos
+### 4. Intentar crear duplicado (Error)
+POST http://localhost:3002/api/tareas
 Content-Type: application/json
 
 {
-    "nombre": "",
-    "precio": -10,
-    "stock": -5,
-    "categoria": ""
+  "nombre": "estudiar para programacion iv"
 }
 
-### 4. Obtener producto por ID
-GET http://localhost:3001/api/productos/1
-
-### 5. Modificar producto
-PUT http://localhost:3001/api/productos/1
+### 5. Modificar estado
+PUT http://localhost:3002/api/tareas/1
 Content-Type: application/json
 
 {
-    "nombre": "Teclado RGB Pro",
-    "precio": 52000.00,
-    "stock": 10,
-    "categoria": "Periféricos"
+  "nombre": "Estudiar para Programacion IV",
+  "estado": "completada"
 }
 
-### 6. Eliminar producto
-DELETE http://localhost:3001/api/productos/1
+### 6. Eliminar tarea
+DELETE http://localhost:3002/api/tareas/1

@@ -1,14 +1,10 @@
-
-
-# Ejercicio 2 - Diagrama de Entidad (DER)
+# Ejercicio 2 - Diagrama Entidad Relación (DER)
 
 ```mermaid
 erDiagram
-    PRODUCTOS {
+    TAREAS {
         int id PK
-        string nombre
-        decimal precio
-        int stock
-        string categoria
+        string nombre UK
+        string estado
         timestamp created_at
     }
