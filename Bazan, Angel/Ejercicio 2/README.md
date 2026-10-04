@@ -8,3 +8,4 @@ erDiagram
         string estado
         timestamp created_at
     }
+```

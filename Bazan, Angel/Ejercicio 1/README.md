@@ -10,3 +10,4 @@ erDiagram
         decimal superficie
         timestamp created_at
     }
+```

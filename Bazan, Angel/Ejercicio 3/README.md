@@ -16,3 +16,6 @@ erDiagram
         decimal nota_3
         timestamp created_at
     }
+```
+
+Regla de unicidad: no se permite repetir la misma combinacion alumno-materia.
